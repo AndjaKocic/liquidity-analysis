@@ -1,7 +1,8 @@
-# liquidity-analysis
-Liquidity analysis of MOEX
+# Анализ ликвидности
 
-## Install Requirements for Ubuntu 18.04
+Анализ ликвидности Московской биржи
+
+## Требования к установлению для Ubuntu 18.04
 
 ```
 sudo apt update -y
@@ -9,7 +10,7 @@ sudo apt install -y python3.7 python3.7-dev build-essential libssl-dev libffi-de
 sudo apt install -y unixodbc unixodbc-dev
 ```
 
-## Setup Requirements
+## Требования к программы установки
 
 ```
 python3.7 -m virtualenv -p `which python3.7` venv/cpython37
