@@ -1,0 +1,1 @@
+select seccode, count(seccode) from trade_log group by seccode order by count(seccode) desc limit 1;
