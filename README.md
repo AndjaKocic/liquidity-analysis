@@ -55,3 +55,15 @@ python problem2.py
 # INPUT seccode: SBER
 # INPUT timestamp: 2015-09-01 12:00:00
 ```
+
+## Задача 3
+
+```
+python problem3.py
+```
+
+## Задача 4
+
+```
+python problem4.py
+```
