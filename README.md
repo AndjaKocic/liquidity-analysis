@@ -6,8 +6,7 @@
 
 ```
 sudo apt update -y
-sudo apt install -y python3.7 python3.7-dev build-essential libssl-dev libffi-dev python-virtualenv
-sudo apt install -y unixodbc unixodbc-dev
+sudo apt install -y python3.7 python3.7-dev build-essential libssl-dev libffi-dev python-virtualenv sqlite3
 ```
 
 ## Требования к программы установки
@@ -33,8 +32,8 @@ python problem1.py
 3. SQLзапросом в таблице торгов обыкновенными акциями найти тикер, по которым было совершенно больше всего сделок, т.е. исполнено больше всего рыночных заявок.
 
 ```
-sqlite3 order_log.db < problem1.sql
-# OUTPUT: SBER|21635
+sqlite3 liquidity-analysis.db < problem1.sql
+# OUTPUT: SBER|19730
 ```
 
 ## Задача 2

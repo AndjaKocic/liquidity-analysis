@@ -41,8 +41,11 @@ from sqlalchemy.pool import Pool
 from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 
+import numpy as np
+import matplotlib.pyplot as plt
+
 engine = create_engine(
-    'sqlite:///order_log.db',
+    'sqlite:///liquidity-analysis.db',
     isolation_level='SERIALIZABLE',
 )
 
@@ -74,8 +77,61 @@ class _Base:
 Base = declarative_base(cls=_Base)
 
 
-class OrderLog(Base):
-    __tablename__ = 'order_log'
+class Security(Base):
+    __tablename__ = 'security'
+
+    '''
+    SUPERTYPE,INSTRUMENT_TYPE,TRADE_CODE
+    Акции,Пай биржевого ПИФа,CBOM
+    '''
+    id = Column(Integer, primary_key=True)
+    seccode = Column(String, index=True)
+    instrument_type = Column(String)
+    supertype = Column(String)
+
+
+class PrefferedStockOrderLog(Base):
+    __tablename__ = 'preffered_stock_order_log'
+
+    '''
+    NO,SECCODE,BUYSELL,TIME,ORDERNO,ACTION,PRICE,VOLUME,TRADENO,TRADEPRICE
+    1,PLSM,S,100000000,1,1,0.32,36000,,
+    '''
+    id = Column(Integer, primary_key=True)
+    no = Column(Integer, index=True)
+    seccode = Column(String, index=True)
+    buysell = Column(String)
+    time = Column(Integer, index=True)
+    orderno = Column(Integer, index=True)
+    action = Column(Integer)
+    price = Column(Float)
+    volume = Column(Float)
+    tradeno = Column(Integer)
+    tradeprice = Column(Float)
+
+
+class OrdinaryStockOrderLog(Base):
+    __tablename__ = 'ordinary_stock_order_log'
+
+    '''
+    NO,SECCODE,BUYSELL,TIME,ORDERNO,ACTION,PRICE,VOLUME,TRADENO,TRADEPRICE
+    1,PLSM,S,100000000,1,1,0.32,36000,,
+    '''
+    id = Column(Integer, primary_key=True)
+    no = Column(Integer, index=True)
+    seccode = Column(String, index=True)
+    buysell = Column(String)
+    time = Column(Integer, index=True)
+    orderno = Column(Integer, index=True)
+    action = Column(Integer)
+    price = Column(Float)
+    volume = Column(Float)
+    tradeno = Column(Integer)
+    tradeprice = Column(Float)
+
+
+class BondOrderLog(Base):
+    __tablename__ = 'bond_order_log'
 
     '''
     NO,SECCODE,BUYSELL,TIME,ORDERNO,ACTION,PRICE,VOLUME,TRADENO,TRADEPRICE
@@ -111,33 +167,20 @@ class TradeLog(Base):
     volume = Column(Float)
 
 
-class Security(Base):
-    __tablename__ = 'securities'
-
-    '''
-    RN,SUPERTYPE,TRADE_CODE
-    1,Акции,CBOM
-    '''
-    id = Column(Integer, primary_key=True)
-    no = Column(Integer, index=True)
-    seccode = Column(String, index=True)
-    supertype = Column(String)
-
-
 Base.metadata.create_all(engine)
 
 # 2.a: Запрашивает в базе данных таблицу-классификатор торгуемых ценных бумаг.
-sql_query = 'select * from securities'
+sql_query = 'select * from security'
 securities = list(engine.execute(text(sql_query)))
-print(securities)
+# print(securities)
 
 # 2.b: Предлагает пользователю ввести тикер и момент времени в течение торговой сессий [можно узнать на сайте Московской биржи или определить из данных orderlog’а].
-print('enter seccode:')
-seccode = input()
+print('enter seccode (SBER):')
+seccode = input() or 'SBER'
 print('seccode:', seccode)
 
-print('enter timestamp:')
-dt = input()
+print('enter timestamp (2015-09-01 12:00:00):')
+dt = input() or '2015-09-01 12:00:00'
 dt = parse(dt)
 timestamp = dt.timestamp()
 print('dt:', dt)
@@ -153,34 +196,43 @@ trade_logs = list(engine.execute(text(sql_query)))
 print(trade_logs)
 
 # 2.d: По полученным данным построит «стакан» и визуализирует его в виде таблицы и графика; на графике в явном виде отмечает такие аспекты ликвидности как сжатость (бид-аск спрэд) и глубину (объем на лучших ценах покупки и продажи).
-sql_query = f'select price, sum(volume) from order_log where seccode="{seccode}" and buysell = "B" and time <= {timestamp} and price > 0 group by price'
-buy_order_logs = list(engine.execute(text(sql_query)))
+buy_order_logs = []
+sql_query = f'select price, sum(volume) from preffered_stock_order_log where seccode="{seccode}" and buysell = "B" and time <= {timestamp} and price > 0 group by price order by price desc'
+buy_order_logs += list(engine.execute(text(sql_query)))
+sql_query = f'select price, sum(volume) from ordinary_stock_order_log where seccode="{seccode}" and buysell = "B" and time <= {timestamp} and price > 0 group by price order by price desc'
+buy_order_logs += list(engine.execute(text(sql_query)))
+sql_query = f'select price, sum(volume) from bond_order_log where seccode="{seccode}" and buysell = "B" and time <= {timestamp} and price > 0 group by price order by price desc'
+buy_order_logs += list(engine.execute(text(sql_query)))
 print('buy_order_logs:', buy_order_logs)
 
-sql_query = f'select price, sum(volume) from order_log where seccode="{seccode}" and buysell = "S" and time <= {timestamp} and price > 0 group by price'
-sell_order_logs = list(engine.execute(text(sql_query)))
+sell_order_logs = []
+sql_query = f'select price, sum(volume) from preffered_stock_order_log where seccode="{seccode}" and buysell = "S" and time <= {timestamp} and price > 0 group by price order by price asc'
+sell_order_logs += list(engine.execute(text(sql_query)))
+sql_query = f'select price, sum(volume) from ordinary_stock_order_log where seccode="{seccode}" and buysell = "S" and time <= {timestamp} and price > 0 group by price order by price asc'
+sell_order_logs += list(engine.execute(text(sql_query)))
+sql_query = f'select price, sum(volume) from bond_order_log where seccode="{seccode}" and buysell = "S" and time <= {timestamp} and price > 0 group by price order by price asc'
+sell_order_logs += list(engine.execute(text(sql_query)))
 print('sell_order_logs:', sell_order_logs)
 
-best_5_buy_order_logs = sorted(buy_order_logs, key=lambda n: n[0])[:5]
-best_5_sell_order_logs = sorted(sell_order_logs, key=lambda n: -n[0])[:5]
+# best_5_buy_order_logs = sorted(buy_order_logs, key=lambda n: n[0])[:5]
+# best_5_sell_order_logs = sorted(sell_order_logs, key=lambda n: -n[0])[:5]
+best_5_buy_order_logs = buy_order_logs[:5]
+best_5_sell_order_logs = sell_order_logs[:5]
 print('best_5_buy_order_logs:', best_5_buy_order_logs)
 print('best_5_sell_order_logs:', best_5_sell_order_logs)
 
-min_buy = min(best_5_buy_order_logs)[0]
+min_buy = max(best_5_buy_order_logs)[0]
 min_sell = min(best_5_sell_order_logs)[0]
-spread = min_sell - min_buy
+spread = min_buy - min_sell
 avg_price = (min_sell + min_buy) / 2.0
 print('spread:', spread, '(', min_sell, '-', min_buy, ')')
 print('avg_price:', avg_price)
-
-import numpy as np
-import matplotlib.pyplot as plt
 
 fig, ax = plt.subplots()
 ax.plot([n[0] for n in best_5_buy_order_logs], [n[1] for n in best_5_buy_order_logs], 'k--', label='Bid')
 ax.plot([n[0] for n in best_5_sell_order_logs], [n[1] for n in best_5_sell_order_logs], 'k:', label='Ask')
 legend = ax.legend(loc='upper center', shadow=True, fontsize='x-large')
-plt.show()
+plt.savefig('problem2d.png')
 
 # 2.e: Выявляет заявки типа «айзберг» и сохраняет информацию их номерах, выявленных в них скрытых объемах и времени обнаружения в виде таблицы.
 sql_query = f'select volume, seccode, count(*) as c from trade_log where seccode="{seccode}" and time <= {timestamp} group by volume, seccode having count(*) > 1 order by c desc limit 100'

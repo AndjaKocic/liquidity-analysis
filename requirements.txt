@@ -1,4 +1,3 @@
-pyodbc
 pandas
 matplotlib
 sqlalchemy

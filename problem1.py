@@ -1,11 +1,4 @@
-'''
-import sqlite3
-import pyodbc
-
-db_path = 'order_log.db'
-con_str = f"DRIVER={{SQLite3 ODBC Driver}};SERVER=localhost;DATABASE={db_path};Trusted_connection=yes"
-db = pyodbc.connect(con_str)
-'''
+# problem 1.1, 1.2
 
 import os
 import csv
@@ -31,7 +24,6 @@ for n in sorted(os.listdir('OrderLog')):
 # print(order_log_paths)
 # print(trade_log_paths)
 
-
 from sqlalchemy import create_engine, event
 from sqlalchemy import Column, Index, Boolean, Integer, Float, String, DateTime
 from sqlalchemy.orm import sessionmaker
@@ -42,7 +34,7 @@ from dateutil.parser import parse
 from dateutil.relativedelta import relativedelta
 
 engine = create_engine(
-    'sqlite:///order_log.db',
+    'sqlite:///liquidity-analysis.db',
     isolation_level='SERIALIZABLE',
 )
 
@@ -74,8 +66,61 @@ class _Base:
 Base = declarative_base(cls=_Base)
 
 
-class OrderLog(Base):
-    __tablename__ = 'order_log'
+class Security(Base):
+    __tablename__ = 'security'
+
+    '''
+    SUPERTYPE,INSTRUMENT_TYPE,TRADE_CODE
+    Акции,Пай биржевого ПИФа,CBOM
+    '''
+    id = Column(Integer, primary_key=True)
+    seccode = Column(String, index=True)
+    instrument_type = Column(String)
+    supertype = Column(String)
+
+
+class PrefferedStockOrderLog(Base):
+    __tablename__ = 'preffered_stock_order_log'
+
+    '''
+    NO,SECCODE,BUYSELL,TIME,ORDERNO,ACTION,PRICE,VOLUME,TRADENO,TRADEPRICE
+    1,PLSM,S,100000000,1,1,0.32,36000,,
+    '''
+    id = Column(Integer, primary_key=True)
+    no = Column(Integer, index=True)
+    seccode = Column(String, index=True)
+    buysell = Column(String)
+    time = Column(Integer, index=True)
+    orderno = Column(Integer, index=True)
+    action = Column(Integer)
+    price = Column(Float)
+    volume = Column(Float)
+    tradeno = Column(Integer)
+    tradeprice = Column(Float)
+
+
+class OrdinaryStockOrderLog(Base):
+    __tablename__ = 'ordinary_stock_order_log'
+
+    '''
+    NO,SECCODE,BUYSELL,TIME,ORDERNO,ACTION,PRICE,VOLUME,TRADENO,TRADEPRICE
+    1,PLSM,S,100000000,1,1,0.32,36000,,
+    '''
+    id = Column(Integer, primary_key=True)
+    no = Column(Integer, index=True)
+    seccode = Column(String, index=True)
+    buysell = Column(String)
+    time = Column(Integer, index=True)
+    orderno = Column(Integer, index=True)
+    action = Column(Integer)
+    price = Column(Float)
+    volume = Column(Float)
+    tradeno = Column(Integer)
+    tradeprice = Column(Float)
+
+
+class BondOrderLog(Base):
+    __tablename__ = 'bond_order_log'
 
     '''
     NO,SECCODE,BUYSELL,TIME,ORDERNO,ACTION,PRICE,VOLUME,TRADENO,TRADEPRICE
@@ -111,24 +156,35 @@ class TradeLog(Base):
     volume = Column(Float)
 
 
-class Security(Base):
-    __tablename__ = 'securities'
-
-    '''
-    RN,SUPERTYPE,TRADE_CODE
-    1,Акции,CBOM
-    '''
-    id = Column(Integer, primary_key=True)
-    no = Column(Integer, index=True)
-    seccode = Column(String, index=True)
-    supertype = Column(String)
-
-
 Base.metadata.create_all(engine)
 session = Session()
 
+print('insert securities')
+
+with open(securities_path) as csvfile:
+    reader = csv.DictReader(csvfile)
+    securities = []
+
+    for row in reader:
+        supertype = row['SUPERTYPE']
+        instrument_type = row['INSTRUMENT_TYPE']
+        seccode = row['TRADE_CODE']
+
+        security = Security(
+            supertype = supertype,
+            instrument_type = instrument_type,
+            seccode = seccode,
+        )
+
+        securities.append(security)
+
+    session.add_all(securities)
+    session.flush()
+
+
 print('insert order_log')
 
+# for p in order_log_paths:
 for p in order_log_paths[:1]:
     dt = p[-12:-4]
     dt = parse(dt)
@@ -138,22 +194,66 @@ for p in order_log_paths[:1]:
         order_logs = []
 
         for row in reader:
-            order_log = OrderLog(
-                no = row['NO'],
-                seccode = row['SECCODE'],
-                buysell = row['BUYSELL'],
-                time = (dt + timedelta(milliseconds=int(row['TIME']) - 100000000)).timestamp(),
-                orderno = row['ORDERNO'],
-                action = row['ACTION'],
-                price = row['PRICE'],
-                volume = row['VOLUME'],
-                tradeno = row['TRADENO'],
-                tradeprice = row['TRADEPRICE'] or 0,
-            )
+            seccode = row['SECCODE']
+
+            q = session.query(Security)
+            q = q.filter(Security.seccode==seccode)
+            security = q.first()
+
+            if not security:
+                continue
+
+            if not security.instrument_type:
+                continue
+
+            if security.supertype == 'Облигации':
+                order_log = BondOrderLog(
+                    no = row['NO'],
+                    seccode = row['SECCODE'],
+                    buysell = row['BUYSELL'],
+                    time = (dt + timedelta(milliseconds=int(row['TIME']) - 100000000)).timestamp(),
+                    orderno = row['ORDERNO'],
+                    action = row['ACTION'],
+                    price = row['PRICE'],
+                    volume = row['VOLUME'],
+                    tradeno = row['TRADENO'],
+                    tradeprice = row['TRADEPRICE'] or 0,
+                )
+            elif security.supertype == 'Акции':
+                if security.instrument_type == 'Акция обыкновенная':
+                    order_log = OrdinaryStockOrderLog(
+                        no = row['NO'],
+                        seccode = row['SECCODE'],
+                        buysell = row['BUYSELL'],
+                        time = (dt + timedelta(milliseconds=int(row['TIME']) - 100000000)).timestamp(),
+                        orderno = row['ORDERNO'],
+                        action = row['ACTION'],
+                        price = row['PRICE'],
+                        volume = row['VOLUME'],
+                        tradeno = row['TRADENO'],
+                        tradeprice = row['TRADEPRICE'] or 0,
+                    )
+                elif security.instrument_type == 'Акция привилегированная':
+                    order_log = PrefferedStockOrderLog(
+                        no = row['NO'],
+                        seccode = row['SECCODE'],
+                        buysell = row['BUYSELL'],
+                        time = (dt + timedelta(milliseconds=int(row['TIME']) - 100000000)).timestamp(),
+                        orderno = row['ORDERNO'],
+                        action = row['ACTION'],
+                        price = row['PRICE'],
+                        volume = row['VOLUME'],
+                        tradeno = row['TRADENO'],
+                        tradeprice = row['TRADEPRICE'] or 0,
+                    )
+                else:
+                    continue
+            else:
+                continue
 
             order_logs.append(order_log)
 
-            if len(order_logs) > 100_000:
+            if len(order_logs) > 500_000:
                 break
         
         session.add_all(order_logs)
@@ -161,6 +261,7 @@ for p in order_log_paths[:1]:
 
 print('insert trade_log')
 
+# for p in trade_log_paths:
 for p in trade_log_paths[:1]:
     dt = p[-12:-4]
     dt = parse(dt)
@@ -188,27 +289,6 @@ for p in trade_log_paths[:1]:
         session.add_all(trade_logs)
         session.flush()
 
-print('insert securities')
-
-with open(securities_path) as csvfile:
-    reader = csv.DictReader(csvfile)
-    securities = []
-
-    for row in reader:
-        rn = row['RN']
-        supertype = row['SUPERTYPE']
-        seccode = row['TRADE_CODE']
-
-        security = Security(
-            no = rn,
-            supertype = supertype,
-            seccode = seccode,
-        )
-
-        securities.append(security)
-
-    session.add_all(securities)
-    session.flush()
 
 session.commit()
 session.close()
