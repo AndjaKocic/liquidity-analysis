@@ -1,5 +1,4 @@
-# problem 1.1, 1.2
-
+# problem 3
 import os
 import csv
 from datetime import timedelta
@@ -15,25 +14,35 @@ import matplotlib.pyplot as plt
 from db import engine, text, Session, Security, PrefferedStockOrderLog, OrdinaryStockOrderLog, BondOrderLog, TradeLog
 
 
+seccode = 'SBER'
+time_step = '1'
+from_timestamp = '2015-09-01 00:00:00'
+to_timestamp = '2015-09-01 00:10:00'
+v = '10'
+operation = 'buy'
+
+
 def get_price_volume_for_seccode_timestamps(session):
     # 2.a
-    print('enter seccode (SBER):')
-    seccode = input() or 'SBER'
+    global seccode, time_step, from_timestamp, to_timestamp
+
+    print(f'enter seccode ({seccode}):')
+    seccode = input() or seccode
     print('seccode:', seccode)
 
-    print('enter time_step (1) in minutes:')
-    time_step = input() or '1'
+    print(f'enter time_step ({time_step}) in minutes:')
+    time_step = input() or time_step
     time_step = float(time_step) * 60.0
     print('time_step:', time_step)
 
-    print('enter from_timestamp (2015-09-01 00:00:00):')
-    dt = input() or '2015-09-01 00:00:00'
+    print(f'enter from_timestamp ({from_timestamp}):')
+    dt = input() or from_timestamp
     dt = parse(dt)
     from_timestamp = dt.timestamp()
     print('from_timestamp:', from_timestamp)
 
-    print('enter to_timestamp (2015-09-01 12:00:00):')
-    dt = input() or '2015-09-01 00:10:00'
+    print(f'enter to_timestamp ({to_timestamp}):')
+    dt = input() or to_timestamp
     dt = parse(dt)
     to_timestamp = dt.timestamp()
     print('to_timestamp:', to_timestamp)
@@ -90,7 +99,11 @@ def get_price_volume_for_seccode_timestamps(session):
 
         current += time_step
 
+
+def get_price_volume_for_v_operation(session):
     # 2.c
+    global v, operation
+
     print('v (10):')
     v = input() or '10'
     v = int(v)
@@ -258,6 +271,7 @@ def get_price_volume_for_seccode_timestamps(session):
 def main():
     session = Session()
     get_price_volume_for_seccode_timestamps(session)
+    get_price_volume_for_v_operation(session)
     session.close()
 
 

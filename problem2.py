@@ -13,8 +13,14 @@ import matplotlib.pyplot as plt
 from db import engine, text, Session, Security, PrefferedStockOrderLog, OrdinaryStockOrderLog, BondOrderLog, TradeLog
 
 
+securities = None
+seccode = 'SBER'
+timestamp = '2015-09-01 12:00:00'
+
+
 def get_all_securities(session):
     # 2.a: Запрашивает в базе данных таблицу-классификатор торгуемых ценных бумаг.
+    global securities
     sql_query = 'select * from security'
     securities = list(engine.execute(text(sql_query)))
     # print(securities)
@@ -22,15 +28,16 @@ def get_all_securities(session):
 
 def get_logs_for_seccode(session):
     # 2.b: Предлагает пользователю ввести тикер и момент времени в течение торговой сессий [можно узнать на сайте Московской биржи или определить из данных orderlog’а].
-    print('enter seccode (SBER):')
-    seccode = input() or 'SBER'
+    global seccode, timestamp
+
+    print(f'enter seccode ({seccode}):')
+    seccode = input() or seccode
     print('seccode:', seccode)
 
-    print('enter timestamp (2015-09-01 12:00:00):')
-    dt = input() or '2015-09-01 12:00:00'
-    dt = parse(dt)
-    timestamp = dt.timestamp()
-    print('dt:', dt)
+    print(f'enter timestamp ({timestamp}):')
+    timestamp = input() or timestamp
+    timestamp = parse(timestamp)
+    timestamp = timestamp.timestamp()
     print('timestamp:', timestamp)
 
     sql_query = f'select * from trade_log where seccode="{seccode}" order by ABS(time - {timestamp}) limit 1'
