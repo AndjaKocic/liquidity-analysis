@@ -23,10 +23,10 @@ def get_all_securities(session):
     global securities
     sql_query = 'select * from security'
     securities = list(engine.execute(text(sql_query)))
-    # print(securities)
+    print(securities)
 
 
-def get_logs_for_seccode(session):
+def get_logs_for_seccode_timestamp(session):
     # 2.b: Предлагает пользователю ввести тикер и момент времени в течение торговой сессий [можно узнать на сайте Московской биржи или определить из данных orderlog’а].
     global seccode, timestamp
 
@@ -103,7 +103,7 @@ def get_logs_for_seccode(session):
 def main():
     session = Session()
     get_all_securities(session)
-    get_logs_for_seccode(session)
+    get_logs_for_seccode_timestamp(session)
     session.close()
 
 
