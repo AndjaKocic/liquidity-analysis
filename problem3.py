@@ -22,7 +22,7 @@ v = '10'
 operation = 'buy'
 
 
-def get_price_volume_for_seccode_timestamps(session):
+def get_price_volume_for_seccode_timestamps(session, ask_to_save=False):
     # 2.a
     global seccode, time_step, from_timestamp, to_timestamp
 
@@ -100,7 +100,7 @@ def get_price_volume_for_seccode_timestamps(session):
         current += time_step
 
 
-def get_price_volume_for_v_operation(session):
+def get_price_volume_for_v_operation(session, ask_to_save=False):
     # 2.c
     global v, operation
 
@@ -230,7 +230,13 @@ def get_price_volume_for_v_operation(session):
         ax.axvline(x, color='b')
 
     legend = ax.legend(loc='upper center', shadow=True, fontsize='x-large')
-    plt.savefig('problem3d1.png')
+    path = 'problem3d1.png'
+
+    if ask_to_save:
+        print(f'Enter path where to save graph 3d1 ({path!r}):')
+        path = input() or path
+
+    plt.savefig(path)
 
     # 2.d.2
     fig, ax = plt.subplots()
@@ -265,7 +271,13 @@ def get_price_volume_for_v_operation(session):
         ax.axvline(x, color='r')
 
     legend = ax.legend(loc='upper center', shadow=True, fontsize='x-large')
-    plt.savefig('problem3d2.png')
+    path = 'problem3d2.png'
+
+    if ask_to_save:
+        print(f'Enter path where to save graph 3d2 ({path!r}):')
+        path = input() or path
+
+    plt.savefig(path)
 
 
 def main():

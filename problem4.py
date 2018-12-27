@@ -32,16 +32,16 @@ def menu(session):
         print('menu item:', item)
 
         if item == '1':
-            get_all_securities(session)
+            get_all_securities(session, ask_to_save=True)
         elif item == '2':
-            get_logs_for_seccode_timestamp(session)
+            get_logs_for_seccode_timestamp(session, ask_to_save=True)
         elif item == '3':
-            get_price_volume_for_seccode_timestamps(session)
+            get_price_volume_for_seccode_timestamps(session, ask_to_save=True)
         elif item == '4':
-            get_price_volume_for_v_operation(session)
+            get_price_volume_for_v_operation(session, ask_to_save=True)
         elif item == '0':
             break
-        elif:
+        else:
             print('invalid menu item')
 
 
